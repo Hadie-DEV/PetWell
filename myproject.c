@@ -58,6 +58,12 @@ void loadProducts() {
     fclose(fp);
 }
 
+void clearInputBuffer() {
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+}
+
+
 /* ---------------- Input Helpers ---------------- */
 int getPositiveID(const char* prompt) {
     int id;
@@ -65,11 +71,11 @@ int getPositiveID(const char* prompt) {
         printf("%s", prompt);
         if (scanf("%d", &id) != 1) {
             printf("Invalid input! Please enter a number.\n");
-            while (getchar() != '\n');
+            clearInputBuffer();
         } else if (id <= 0) {
             printf("ID must be greater than 0.\n");
         } else {
-            while (getchar() != '\n');
+            clearInputBuffer();
             return id;
         }
     }
@@ -81,11 +87,11 @@ int getQuantityToAdd() {
         printf("Enter quantity to add (>%d): ", MIN_ADD_QTY);
         if (scanf("%d", &qty) != 1) {
             printf("Invalid input! Please enter a number.\n");
-            while (getchar() != '\n');
+            clearInputBuffer();
         } else if (qty <= MIN_ADD_QTY) {
             printf("Quantity must be greater than %d.\n", MIN_ADD_QTY);
         } else {
-            while (getchar() != '\n');
+            clearInputBuffer();
             return qty;
         }
     }
@@ -97,14 +103,14 @@ int getQuantityToSell(int stock) {
         printf("Enter quantity to sell: ");
         if (scanf("%d", &qty) != 1) {
             printf("Invalid input! Please enter a number.\n");
-            while (getchar() != '\n');
+            clearInputBuffer();
         } else if (qty < MIN_SELL_QTY) {
             printf("Quantity must be at least %d.\n", MIN_SELL_QTY);
 
         } else if (qty > stock) {
             printf("Not enough stock! Maximum available: %d\n", stock);
         } else {
-            while (getchar() != '\n');
+            clearInputBuffer();
             return qty;
         }
     }
@@ -116,11 +122,11 @@ float getFloatInRange(const char* prompt, float min, float max) {
         printf("%s", prompt);
         if (scanf("%f", &value) != 1) {
             printf("Invalid input! Please enter a number.\n");
-            while (getchar() != '\n');
+            clearInputBuffer();
         } else if (value < min || value > max) {
             printf("Input must be between %.2f and %.2f.\n", min, max);
         } else {
-            while (getchar() != '\n');
+            clearInputBuffer();
             return value;
         }
     }
