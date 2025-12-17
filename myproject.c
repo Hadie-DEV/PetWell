@@ -185,7 +185,7 @@ void viewMedicines() {
     printf("%-5s %-20s %-10s %-10s\n", "ID", "Name", "Quantity", "Price");
     for (int i = 0; i < productCount; i++) {
         printf("%-5d %-20s %-10d $%-10.2f", products[i].id, products[i].name, products[i].quantity, products[i].price);
-        #define LOW_STOCK_THRESHOLD 5
+
         if (products[i].quantity < LOW_STOCK_THRESHOLD)
         printf("  [LOW STOCK]");
 
