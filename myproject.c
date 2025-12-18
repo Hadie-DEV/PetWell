@@ -25,38 +25,66 @@ typedef struct {
     float totalSales;
 } Product;
 
-Product products[MAX_PRODUCTS];
-int productCount = 0;
 
-char history[MAX_HISTORY][100];
-int historyCount = 0;
+typedef struct {
+    Product products[MAX_PRODUCTS];
+    int productCount;
+} Inventory;
+
+Inventory* getInventory() {
+    static Inventory inventory; // only one instance exists
+    return &inventory;
+}
+
+typedef struct {
+    char records[MAX_HISTORY][100];
+    int count;
+} HistoryLog;
+
+HistoryLog* getHistory() {
+    static HistoryLog history; // only one instance exists
+    return &history;
+}
+
 
 /* ---------------- Helper Functions ---------------- */
 Product* findProduct(int id) {
-    for (int i = 0; i < productCount; i++)
-        if (products[i].id == id)
-            return &products[i];
+    Inventory* inv = getInventory();
+    for (int i = 0; i < inv->productCount; i++)
+        if (inv->products[i].id == id)
+            return &inv->products[i];
     return NULL;
 }
 
+
 void logAction(const char* action) {
-    if (historyCount < MAX_HISTORY)
-        strcpy(history[historyCount++], action);
+    HistoryLog* hist = getHistory();
+    if (hist->count < MAX_HISTORY)
+        strcpy(hist->records[hist->count++], action);
 }
+
 
 void saveProducts() {
     FILE* fp = fopen("products.dat", "wb");
     if (!fp) return;
-    fwrite(products, sizeof(Product), productCount, fp);
+
+    Inventory* inv = getInventory(); // get the singleton inventory
+    fwrite(inv->products, sizeof(Product), inv->productCount, fp);
+
     fclose(fp);
 }
+
 
 void loadProducts() {
     FILE* fp = fopen("products.dat", "rb");
     if (!fp) return;
-    productCount = fread(products, sizeof(Product), MAX_PRODUCTS, fp);
+
+    Inventory* inv = getInventory(); // get the singleton inventory
+    inv->productCount = fread(inv->products, sizeof(Product), MAX_PRODUCTS, fp);
+
     fclose(fp);
 }
+
 
 void clearInputBuffer() {
     int c;
@@ -158,7 +186,8 @@ void getValidMedicineName(char* name) {
 
 /* ---------------- Core Functions ---------------- */
 void addMedicine() {
-    if (productCount >= MAX_PRODUCTS) {
+    Inventory* inv = getInventory(); // get singleton
+    if (inv->productCount >= MAX_PRODUCTS) {
         printf("Inventory full!\n\n");
         return;
     }
@@ -173,7 +202,7 @@ void addMedicine() {
     p.quantity = getQuantityToAdd();
     p.totalSales = 0;
 
-    products[productCount++] = p;
+    inv->products[inv->productCount++] = p;
 
     sprintf(buffer, "Added medicine: %s, ID:%d", p.name, p.id);
     logAction(buffer);
@@ -182,24 +211,27 @@ void addMedicine() {
 }
 
 void viewMedicines() {
-    if (productCount == 0) {
+    Inventory* inv = getInventory();
+    if (inv->productCount == 0) {
         printf("No medicines available.\n\n");
         return;
     }
 
     printf("\n--- MEDICINE LIST ---\n");
     printf("%-5s %-20s %-10s %-10s\n", "ID", "Name", "Quantity", "Price");
-    for (int i = 0; i < productCount; i++) {
-        printf("%-5d %-20s %-10d $%-10.2f", products[i].id, products[i].name, products[i].quantity, products[i].price);
-
-        if (products[i].quantity < LOW_STOCK_THRESHOLD)
-        printf("  [LOW STOCK]");
-
-
+    for (int i = 0; i < inv->productCount; i++) {
+        printf("%-5d %-20s %-10d $%-10.2f", 
+               inv->products[i].id, 
+               inv->products[i].name, 
+               inv->products[i].quantity, 
+               inv->products[i].price);
+        if (inv->products[i].quantity < LOW_STOCK_THRESHOLD)
+            printf("  [LOW STOCK]");
         printf("\n");
     }
     printf("\n");
 }
+
 
 void updateMedicineStock() {
     char buffer[100];
@@ -241,12 +273,14 @@ void checkMedicineStock() {
 }
 
 void calculateStockValue() {
+    Inventory* inv = getInventory();
     float total = 0;
-    for (int i = 0; i < productCount; i++)
-        total += products[i].quantity * products[i].price;
+    for (int i = 0; i < inv->productCount; i++)
+        total += inv->products[i].quantity * inv->products[i].price;
 
     printf("Total stock value: $%.2f\n\n", total);
 }
+
 
 void applyDiscount() {
     char buffer[100];
@@ -267,14 +301,17 @@ void applyDiscount() {
 void removeMedicine() {
     char buffer[100];
     int id = getPositiveID("Enter Medicine ID to remove: ");
+    Inventory* inv = getInventory();
+
     int found = 0, i;
-    for (i = 0; i < productCount; i++) {
-        if (products[i].id == id) { found = 1; break; }
+    for (i = 0; i < inv->productCount; i++) {
+        if (inv->products[i].id == id) { found = 1; break; }
     }
     if (!found) { printf("ID not found!\n\n"); return; }
 
-    for (; i < productCount - 1; i++) products[i] = products[i + 1];
-    productCount--;
+    for (; i < inv->productCount - 1; i++)
+        inv->products[i] = inv->products[i + 1];
+    inv->productCount--;
 
     sprintf(buffer, "Removed medicine ID:%d", id);
     logAction(buffer);
@@ -283,40 +320,48 @@ void removeMedicine() {
 }
 
 void viewStockHistory() {
-    if (historyCount == 0) { printf("No actions recorded.\n\n"); return; }
+    HistoryLog* hist = getHistory();
+    if (hist->count == 0) {
+        printf("No actions recorded.\n\n");
+        return;
+    }
+
     printf("\n--- STOCK MOVEMENT HISTORY ---\n");
-    for (int i = 0; i < historyCount; i++)
-        printf("%d. %s\n", i + 1, history[i]);
+    for (int i = 0; i < hist->count; i++)
+        printf("%d. %s\n", i + 1, hist->records[i]);
     printf("\n");
 }
 
+
+
 void generateReport() {
-    if (productCount == 0) {
+    Inventory* inv = getInventory();
+    if (inv->productCount == 0) {
         printf("No medicines available to generate report.\n\n");
         return;
     }
 
     float total_value = 0;
 
-    // Print header
     printf("%-5s %-25s %-7s %-10s %-12s\n", "ID", "Medicine Name", "Qty", "Price($)", "Stock Value($)");
     printf("--------------------------------------------------------------------------\n");
 
-    // Print each medicine row
-    for (int i = 0; i < productCount; i++) {
-        float stock_value = products[i].quantity * products[i].price;
+    for (int i = 0; i < inv->productCount; i++) {
+        float stock_value = inv->products[i].quantity * inv->products[i].price;
         total_value += stock_value;
+
         printf("%-5d %-25s %-7d %-10.2f %-12.2f\n",
-               products[i].id,
-               products[i].name,
-               products[i].quantity,
-               products[i].price,
+               inv->products[i].id,
+               inv->products[i].name,
+               inv->products[i].quantity,
+               inv->products[i].price,
                stock_value);
     }
 
     printf("--------------------------------------------------------------------------\n");
     printf("%-39s %-10s %-12.2f\n", "", "Total:", total_value);
 }
+
 
 /* ---------------- Main Menu ---------------- */
 int main() {
