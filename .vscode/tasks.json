@@ -1,0 +1,21 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build myproject.c",
+            "type": "shell",
+            "command": "gcc",
+            "args": [
+                "myproject.c",
+                "-o",
+                "myproject.exe"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"],
+            "detail": "Compile myproject.c with GCC"
+        }
+    ]
+}
